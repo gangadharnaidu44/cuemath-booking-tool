@@ -48,6 +48,7 @@ for (let i = 1; i <= 5; i++) {
   const accountId = process.env[`ZOOM_${i}_ACCOUNT_ID`];
   const clientId = process.env[`ZOOM_${i}_CLIENT_ID`];
   const clientSecret = process.env[`ZOOM_${i}_CLIENT_SECRET`];
+  console.log(`ZOOM_${i}: accountId=${accountId ? 'SET' : 'MISSING'}, clientId=${clientId ? 'SET' : 'MISSING'}, clientSecret=${clientSecret ? 'SET' : 'MISSING'}`);
   if (accountId && clientId && clientSecret) {
     ZOOM_ACCOUNTS.push({ index: i - 1, accountId, clientId, clientSecret });
   }

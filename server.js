@@ -9,7 +9,9 @@ const PORT = process.env.PORT || 3000;
 // ─── DATABASE ───────────────────────────────────────────────
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('railway.internal')
+    ? { rejectUnauthorized: false }
+    : false
 });
 
 async function initDB() {

@@ -29,15 +29,16 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS bookings (
       id TEXT PRIMARY KEY,
       slot_id TEXT NOT NULL REFERENCES slots(id) ON DELETE CASCADE,
-      zoom_account_index INTEGER NOT NULL DEFAULT 0,
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       datetime TEXT NOT NULL,
-      booked_at TEXT NOT NULL,
-      zoom_link TEXT,
-      zoom_meeting_id TEXT
+      booked_at TEXT NOT NULL
     )
   `);
+  // Add new columns if they don't exist yet
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS zoom_account_index INTEGER NOT NULL DEFAULT 0`);
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS zoom_link TEXT`);
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS zoom_meeting_id TEXT`);
   console.log('✅ Database ready');
 }
 

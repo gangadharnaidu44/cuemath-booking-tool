@@ -596,7 +596,8 @@
         <strong>Name:</strong> ${name}<br>
         <strong>Email:</strong> ${email}<br>
         <strong>Date:</strong> ${dateStr}<br>
-        <strong>Time:</strong> ${timeStr} (30 minutes)
+        <strong>Time:</strong> ${timeStr} (30 minutes)<br>
+        ${data.zoomLink ? `<strong>Zoom Link:</strong> <a href="${data.zoomLink}" target="_blank" style="color:var(--yellow-dark);font-weight:700;word-break:break-all">${data.zoomLink}</a>` : ''}
       `;
     } catch (e) {
       errEl.textContent = e.message;

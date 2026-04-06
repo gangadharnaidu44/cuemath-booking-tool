@@ -120,8 +120,10 @@
     .slot-row.available { background: var(--white); }
 
     .slot-status { font-size: 10px; font-weight: 700; padding: 2px 8px; text-transform: uppercase; letter-spacing: 0.4px; }
-    .slot-status.booked { background: var(--yellow); color: var(--black); }
+    .slot-status.booked { background: var(--black); color: var(--white); }
+    .slot-status.partial { background: var(--yellow); color: var(--black); }
     .slot-status.available { background: var(--gray-bg); color: var(--muted); border: 1px solid var(--border-light); }
+    .slot-row.partial { background: #FFFBE6; border-color: var(--yellow); }
 
     .slot-info { display: flex; flex-direction: column; gap: 2px; }
     .slot-time { font-weight: 700; font-size: 13px; }
@@ -264,6 +266,17 @@
     return `${h % 12 || 12}:${m.toString().padStart(2,'0')} ${ampm}`;
   }
 
+  function formatTimeRange(time) {
+    const [h, m] = time.split(':').map(Number);
+    const endM = m + 30;
+    const endH = endM >= 60 ? h + 1 : h;
+    const endMin = endM % 60;
+    const ampm2 = endH >= 12 ? 'PM' : 'AM';
+    const h12s = h % 12 || 12;
+    const h12e = endH % 12 || 12;
+    return `${h12s}:${m.toString().padStart(2,'0')} – ${h12e}:${endMin.toString().padStart(2,'0')} ${ampm2}`;
+  }
+
   function formatDate(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -295,18 +308,25 @@
       container.innerHTML = Object.keys(grouped).sort().map(date => `
         <div class="slots-by-date">
           <div class="date-header">📅 ${formatDate(date)}</div>
-          ${grouped[date].map(slot => `
-            <div class="slot-row ${slot.booking ? 'booked' : 'available'}">
+          ${grouped[date].map(slot => {
+            const count = slot.booking_count || 0;
+            const cap = slot.capacity || 5;
+            const full = count >= cap;
+            const statusClass = full ? 'booked' : count > 0 ? 'partial' : 'available';
+            return `
+            <div class="slot-row ${statusClass}">
               <div class="slot-info">
-                <div class="slot-time">${formatTime(slot.time)}</div>
-                ${slot.booking ? `<div class="slot-candidate">${slot.booking.name} · ${slot.booking.email}</div>` : ''}
+                <div class="slot-time">${formatTimeRange(slot.time)}</div>
+                ${slot.bookings && slot.bookings.length > 0 ? slot.bookings.map(b => `
+                  <div class="slot-candidate">👤 ${b.name} · ${b.email} <span style="color:var(--yellow-dark);font-weight:700">· Acct ${b.zoom_account_index + 1}</span></div>
+                `).join('') : ''}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
-                <span class="slot-status ${slot.booking ? 'booked' : 'available'}">${slot.booking ? 'Booked' : 'Free'}</span>
+                <span class="slot-status ${statusClass}">${count}/${cap}</span>
                 <button class="btn btn-red" onclick="deleteSlot('${slot.id}')">✕</button>
               </div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>
       `).join('');
     } catch (e) {

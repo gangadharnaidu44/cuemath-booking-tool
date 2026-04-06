@@ -1,54 +1,81 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const SLOTS_FILE = path.join(__dirname, 'data/slots.json');
-const BOOKINGS_FILE = path.join(__dirname, 'data/bookings.json');
+// ─── DATABASE ───────────────────────────────────────────────
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
+
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS slots (
+      id TEXT PRIMARY KEY,
+      datetime TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time TEXT NOT NULL
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS bookings (
+      id TEXT PRIMARY KEY,
+      slot_id TEXT NOT NULL REFERENCES slots(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      datetime TEXT NOT NULL,
+      booked_at TEXT NOT NULL
+    )
+  `);
+  console.log('✅ Database ready');
+}
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Helper: read/write JSON
-const readJSON = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
-const writeJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2));
-
 // ─── SLOT ROUTES ───────────────────────────────────────────────
 
-// GET all slots (for candidates — only available ones)
-app.get('/api/slots', (req, res) => {
-  const slots = readJSON(SLOTS_FILE);
-  const bookings = readJSON(BOOKINGS_FILE);
-  const bookedSlotIds = bookings.map(b => b.slotId);
-  const available = slots
-    .filter(s => !bookedSlotIds.includes(s.id))
-    .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-  res.json(available);
+// GET all available slots (for candidates)
+app.get('/api/slots', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT s.* FROM slots s
+      WHERE s.id NOT IN (SELECT slot_id FROM bookings)
+      ORDER BY s.datetime ASC
+    `);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // GET all slots + bookings (for admin)
-app.get('/api/admin/slots', (req, res) => {
-  const slots = readJSON(SLOTS_FILE);
-  const bookings = readJSON(BOOKINGS_FILE);
-  const enriched = slots.map(slot => {
-    const booking = bookings.find(b => b.slotId === slot.id);
-    return { ...slot, booking: booking || null };
-  }).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-  res.json(enriched);
+app.get('/api/admin/slots', async (req, res) => {
+  try {
+    const { rows: slots } = await pool.query('SELECT * FROM slots ORDER BY datetime ASC');
+    const { rows: bookings } = await pool.query('SELECT * FROM bookings');
+    const enriched = slots.map(slot => ({
+      ...slot,
+      booking: bookings.find(b => b.slot_id === slot.id) || null
+    }));
+    res.json(enriched);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // POST create slots (admin)
-app.post('/api/admin/slots', (req, res) => {
+app.post('/api/admin/slots', async (req, res) => {
   const { date, startTime, endTime } = req.body;
   if (!date || !startTime || !endTime) {
     return res.status(400).json({ error: 'date, startTime, endTime are required' });
   }
 
-  const slots = readJSON(SLOTS_FILE);
   const [startH, startM] = startTime.split(':').map(Number);
   const [endH, endM] = endTime.split(':').map(Number);
   const startTotal = startH * 60 + startM;
@@ -58,107 +85,136 @@ app.post('/api/admin/slots', (req, res) => {
     return res.status(400).json({ error: 'End time must be after start time' });
   }
 
-  const newSlots = [];
-  for (let t = startTotal; t + 30 <= endTotal; t += 30) {
-    const h = Math.floor(t / 60).toString().padStart(2, '0');
-    const m = (t % 60).toString().padStart(2, '0');
-    const datetime = `${date}T${h}:${m}:00`;
-    const alreadyExists = slots.some(s => s.datetime === datetime);
-    if (!alreadyExists) {
-      const slot = { id: `${date}-${h}${m}-${Date.now()}`, datetime, date, time: `${h}:${m}` };
-      slots.push(slot);
-      newSlots.push(slot);
-    }
-  }
+  try {
+    const { rows: existing } = await pool.query('SELECT datetime FROM slots WHERE date = $1', [date]);
+    const existingDatetimes = new Set(existing.map(s => s.datetime));
 
-  writeJSON(SLOTS_FILE, slots);
-  res.json({ created: newSlots.length, slots: newSlots });
+    const newSlots = [];
+    for (let t = startTotal; t + 30 <= endTotal; t += 30) {
+      const h = Math.floor(t / 60).toString().padStart(2, '0');
+      const m = (t % 60).toString().padStart(2, '0');
+      const datetime = `${date}T${h}:${m}:00`;
+      if (!existingDatetimes.has(datetime)) {
+        const id = `${date}-${h}${m}-${Date.now()}`;
+        await pool.query(
+          'INSERT INTO slots (id, datetime, date, time) VALUES ($1, $2, $3, $4)',
+          [id, datetime, date, `${h}:${m}`]
+        );
+        newSlots.push({ id, datetime, date, time: `${h}:${m}` });
+      }
+    }
+
+    res.json({ created: newSlots.length, slots: newSlots });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // DELETE a slot (admin)
-app.delete('/api/admin/slots/:id', (req, res) => {
-  let slots = readJSON(SLOTS_FILE);
-  let bookings = readJSON(BOOKINGS_FILE);
-  slots = slots.filter(s => s.id !== req.params.id);
-  bookings = bookings.filter(b => b.slotId !== req.params.id);
-  writeJSON(SLOTS_FILE, slots);
-  writeJSON(BOOKINGS_FILE, bookings);
-  res.json({ success: true });
+app.delete('/api/admin/slots/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM slots WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ─── BOOKING ROUTES ────────────────────────────────────────────
 
 // POST book a slot (candidate)
-app.post('/api/book', (req, res) => {
+app.post('/api/book', async (req, res) => {
   const { slotId, name, email } = req.body;
   if (!slotId || !name || !email) {
     return res.status(400).json({ error: 'slotId, name, and email are required' });
   }
 
-  const slots = readJSON(SLOTS_FILE);
-  const bookings = readJSON(BOOKINGS_FILE);
+  try {
+    const { rows: slots } = await pool.query('SELECT * FROM slots WHERE id = $1', [slotId]);
+    if (slots.length === 0) return res.status(404).json({ error: 'Slot not found' });
 
-  const slot = slots.find(s => s.id === slotId);
-  if (!slot) return res.status(404).json({ error: 'Slot not found' });
+    const { rows: slotBookings } = await pool.query('SELECT id FROM bookings WHERE slot_id = $1', [slotId]);
+    if (slotBookings.length > 0) return res.status(409).json({ error: 'Slot already booked' });
 
-  const alreadyBooked = bookings.some(b => b.slotId === slotId);
-  if (alreadyBooked) return res.status(409).json({ error: 'Slot already booked' });
+    const { rows: candidateBookings } = await pool.query(
+      'SELECT id FROM bookings WHERE LOWER(email) = LOWER($1)', [email]
+    );
+    if (candidateBookings.length > 0) {
+      return res.status(409).json({ error: 'You have already booked an interview slot. Only one booking per candidate is allowed.' });
+    }
 
-  const candidateAlreadyBooked = bookings.some(b => b.email.toLowerCase() === email.toLowerCase());
-  if (candidateAlreadyBooked) return res.status(409).json({ error: 'You have already booked an interview slot. Only one booking per candidate is allowed.' });
+    const slot = slots[0];
+    const booking = {
+      id: `booking-${Date.now()}`,
+      slot_id: slotId,
+      name,
+      email,
+      datetime: slot.datetime,
+      booked_at: new Date().toISOString()
+    };
 
-  const booking = {
-    id: `booking-${Date.now()}`,
-    slotId,
-    name,
-    email,
-    datetime: slot.datetime,
-    bookedAt: new Date().toISOString()
-  };
+    await pool.query(
+      'INSERT INTO bookings (id, slot_id, name, email, datetime, booked_at) VALUES ($1, $2, $3, $4, $5, $6)',
+      [booking.id, booking.slot_id, booking.name, booking.email, booking.datetime, booking.booked_at]
+    );
 
-  bookings.push(booking);
-  writeJSON(BOOKINGS_FILE, bookings);
-
-  res.json({ success: true, booking });
+    res.json({ success: true, booking: { ...booking, slotId } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // GET all bookings (admin)
-app.get('/api/admin/bookings', (req, res) => {
-  const bookings = readJSON(BOOKINGS_FILE);
-  res.json(bookings.sort((a, b) => new Date(a.datetime) - new Date(b.datetime)));
+app.get('/api/admin/bookings', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM bookings ORDER BY datetime ASC');
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// DELETE a booking (admin — frees the slot)
-app.delete('/api/admin/bookings/:id', (req, res) => {
-  let bookings = readJSON(BOOKINGS_FILE);
-  bookings = bookings.filter(b => b.id !== req.params.id);
-  writeJSON(BOOKINGS_FILE, bookings);
-  res.json({ success: true });
+// DELETE a booking (admin)
+app.delete('/api/admin/bookings/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM bookings WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // GET bookings as CSV (admin download)
-app.get('/api/admin/bookings/export', (req, res) => {
-  const bookings = readJSON(BOOKINGS_FILE);
-  const rows = [
-    ['Name', 'Email', 'Date', 'Time', 'Booked At'],
-    ...bookings
-      .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
-      .map(b => {
+app.get('/api/admin/bookings/export', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM bookings ORDER BY datetime ASC');
+    const csvRows = [
+      ['Name', 'Email', 'Date', 'Time', 'Booked At'],
+      ...rows.map(b => {
         const d = new Date(b.datetime);
         const date = d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-        const bookedAt = new Date(b.bookedAt).toLocaleString('en-IN');
+        const bookedAt = new Date(b.booked_at).toLocaleString('en-IN');
         return [b.name, b.email, date, time, bookedAt];
       })
-  ];
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename="bookings.csv"');
-  res.send(csv);
+    ];
+    const csv = csvRows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="bookings.csv"');
+    res.send(csv);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`\n✅ Booking tool running at http://localhost:${PORT}`);
-  console.log(`📋 Admin panel: http://localhost:${PORT}/admin.html`);
-  console.log(`👤 Candidate page: http://localhost:${PORT}/\n`);
+// ─── START ─────────────────────────────────────────────────────
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`\n✅ Booking tool running at http://localhost:${PORT}`);
+    console.log(`📋 Admin panel: http://localhost:${PORT}/admin.html`);
+    console.log(`👤 Candidate page: http://localhost:${PORT}/\n`);
+  });
+}).catch(err => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1);
 });

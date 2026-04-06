@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Cuemath Booking Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --yellow: #FFBA07;
+      --yellow-dark: #e6a800;
+      --black: #0D0D0D;
+      --white: #FFFFFF;
+      --gray-bg: #F5F5F5;
+      --gray-light: #EBEBEB;
+      --muted: rgba(0,0,0,0.5);
+      --border: #0D0D0D;
+      --border-light: #E0E0E0;
+      --red: #ef4444;
+    }
+
+    body { font-family: 'Inter', sans-serif; background: var(--gray-bg); color: var(--black); min-height: 100vh; }
+
+    /* HEADER */
+    header {
+      background: var(--black);
+      padding: 0 28px;
+      height: 57px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #222;
+    }
+
+    .logo-text { font-size: 18px; font-weight: 900; color: var(--white); letter-spacing: -0.5px; }
+    .logo-text span { color: var(--yellow); }
+    .admin-tag {
+      font-size: 11px; font-weight: 700;
+      background: var(--yellow); color: var(--black);
+      padding: 4px 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    /* LAYOUT */
+    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; padding: 24px; max-width: 1200px; margin: 0 auto; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+    /* CARD */
+    .card { background: var(--white); border: 1px solid var(--border-light); padding: 20px; }
+    .card + .card { margin-top: 16px; }
+
+    .card-title {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* FORM */
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    input[type="date"], input[type="time"], input[type="text"] {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border-light);
+      font-size: 13px; font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color 0.15s;
+      background: var(--white); color: var(--black);
+    }
+    input:focus { border-color: var(--black); }
+
+    /* BUTTONS */
+    .btn {
+      padding: 10px 16px; border: none;
+      font-size: 12px; font-weight: 700; font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .btn-yellow { background: var(--yellow); color: var(--black); width: 100%; border: 1px solid var(--yellow); }
+    .btn-yellow:hover { background: var(--black); color: var(--white); border-color: var(--black); }
+    .btn-red { background: #fef2f2; color: var(--red); padding: 4px 8px; font-size: 11px; border: 1px solid #fecaca; }
+    .btn-red:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+    .btn-download { background: var(--yellow); color: var(--black); padding: 6px 12px; font-size: 11px; text-decoration: none; border: 1px solid var(--yellow); display: inline-block; }
+    .btn-download:hover { background: var(--black); color: var(--white); border-color: var(--black); }
+
+    /* TOAST */
+    .toast {
+      position: fixed; top: 20px; right: 20px;
+      background: var(--black); color: var(--white);
+      padding: 12px 18px;
+      font-size: 13px; font-weight: 500;
+      transform: translateY(-80px); opacity: 0;
+      transition: all 0.3s; z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--black); border-left: 4px solid var(--yellow); }
+    .toast.error { background: var(--red); }
+
+    /* STATS */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat { background: var(--white); border: 1px solid var(--border-light); padding: 16px; text-align: center; }
+    .stat-num { font-size: 32px; font-weight: 900; color: var(--black); line-height: 1; }
+    .stat-num.yellow { color: var(--yellow-dark); }
+    .stat-label { font-size: 10px; font-weight: 700; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* SLOTS LIST */
+    .slots-by-date { margin-bottom: 16px; }
+    .date-header {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .slot-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; margin-bottom: 4px; font-size: 13px;
+      border: 1px solid var(--border-light);
+    }
+    .slot-row.booked { background: #FFFBE6; border-color: var(--yellow); }
+    .slot-row.available { background: var(--white); }
+
+    .slot-status { font-size: 10px; font-weight: 700; padding: 2px 8px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .slot-status.booked { background: var(--yellow); color: var(--black); }
+    .slot-status.available { background: var(--gray-bg); color: var(--muted); border: 1px solid var(--border-light); }
+
+    .slot-info { display: flex; flex-direction: column; gap: 2px; }
+    .slot-time { font-weight: 700; font-size: 13px; }
+    .slot-candidate { font-size: 11px; color: var(--muted); }
+
+    /* SPINNER */
+    .spinner { width: 24px; height: 24px; border: 2px solid var(--border-light); border-top-color: var(--yellow); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+    /* DROP ZONE */
+    #dropZone {
+      border: 2px dashed var(--border-light); padding: 24px; text-align: center;
+      cursor: pointer; transition: all 0.15s; margin-bottom: 12px;
+    }
+    #dropZone:hover { border-color: var(--black); background: var(--gray-bg); }
+
+    code {
+      font-family: monospace; font-size: 12px;
+      background: var(--gray-bg); padding: 2px 6px;
+    }
+
+    code.dark {
+      background: var(--black); color: var(--yellow);
+      display: block; padding: 8px 12px; margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo-text">cue<span>math</span> <span style="color:rgba(255,255,255,0.4);font-weight:400;font-size:14px">/ Admin</span></span>
+  <span class="admin-tag">Admin Panel</span>
+</header>
+
+<div class="layout">
+  <!-- Left: Controls -->
+  <div>
+    <div class="card">
+      <div class="card-title">Add Available Slots</div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="slotDate" />
+      </div>
+      <div class="form-group">
+        <label>From</label>
+        <input type="time" id="startTime" value="09:00" />
+      </div>
+      <div class="form-group">
+        <label>To</label>
+        <input type="time" id="endTime" value="12:00" />
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+        Slots are created every <strong style="color:var(--black)">30 minutes</strong> between these times.
+      </div>
+      <button class="btn btn-yellow" onclick="addSlots()">Create Slots</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Import Slots from CSV</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+        Upload your Google Sheet CSV. Slots are created from <strong style="color:var(--black)">Interview Date</strong> and <strong style="color:var(--black)">Time</strong> columns.
+      </div>
+      <div class="form-group">
+        <label>Filter by Panelist (optional)</label>
+        <input type="text" id="panelistFilter" placeholder="e.g. Jeevitha (leave blank for all)" />
+      </div>
+      <div id="dropZone" onclick="document.getElementById('csvFile').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--black)'"
+        ondragleave="this.style.borderColor='var(--border-light)'"
+        ondrop="handleDrop(event)">
+        <div style="font-size:24px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;font-weight:700;color:var(--black)">Click or drag & drop CSV here</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Exported from Google Sheets</div>
+      </div>
+      <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleFileSelect(event)" />
+      <div id="csvPreview" style="display:none;margin-bottom:12px;background:var(--gray-bg);padding:12px;font-size:12px;color:var(--black);border-left:3px solid var(--yellow)"></div>
+      <button class="btn btn-yellow" id="importBtn" style="display:none" onclick="importCSVSlots()">Import Slots</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Share With Candidates</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.8">
+        <strong style="color:var(--black)">Booking link:</strong><br/>
+        <code id="candidateUrl" style="display:block;margin:6px 0;word-break:break-all;background:var(--gray-bg);padding:8px;font-size:11px;"></code>
+        For external candidates, run:<br/>
+        <code class="dark">npx ngrok http 3000</code>
+        Copy the <code>https://...</code> ngrok URL and share it.
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Dashboard -->
+  <div>
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-num" id="statTotal">—</div>
+        <div class="stat-label">Total Slots</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num yellow" id="statBooked">—</div>
+        <div class="stat-label">Booked</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="statAvail">—</div>
+        <div class="stat-label">Available</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>All Slots</span>
+        <a href="/api/admin/bookings/export" download class="btn-download">⬇ Download Excel</a>
+      </div>
+      <div id="slotsList"><div class="spinner" style="margin-top:20px"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  document.getElementById('candidateUrl').textContent = window.location.origin + '/';
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('slotDate').value = today;
+  document.getElementById('slotDate').min = today;
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function formatTime(time) {
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 || 12}:${m.toString().padStart(2,'0')} ${ampm}`;
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  async function loadSlots() {
+    try {
+      const res = await fetch('/api/admin/slots');
+      const slots = await res.json();
+
+      const total = slots.length;
+      const booked = slots.filter(s => s.booking).length;
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statBooked').textContent = booked;
+      document.getElementById('statAvail').textContent = total - booked;
+
+      const container = document.getElementById('slotsList');
+      if (slots.length === 0) {
+        container.innerHTML = '<div class="empty-state">No slots yet. Add some using the form!</div>';
+        return;
+      }
+
+      const grouped = {};
+      slots.forEach(s => {
+        if (!grouped[s.date]) grouped[s.date] = [];
+        grouped[s.date].push(s);
+      });
+
+      container.innerHTML = Object.keys(grouped).sort().map(date => `
+        <div class="slots-by-date">
+          <div class="date-header">📅 ${formatDate(date)}</div>
+          ${grouped[date].map(slot => `
+            <div class="slot-row ${slot.booking ? 'booked' : 'available'}">
+              <div class="slot-info">
+                <div class="slot-time">${formatTime(slot.time)}</div>
+                ${slot.booking ? `<div class="slot-candidate">${slot.booking.name} · ${slot.booking.email}</div>` : ''}
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="slot-status ${slot.booking ? 'booked' : 'available'}">${slot.booking ? 'Booked' : 'Free'}</span>
+                <button class="btn btn-red" onclick="deleteSlot('${slot.id}')">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    } catch (e) {
+      document.getElementById('slotsList').innerHTML = '<div style="color:var(--red);font-size:13px;padding:16px">Failed to load slots</div>';
+    }
+  }
+
+  async function addSlots() {
+    const date = document.getElementById('slotDate').value;
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+
+    if (!date || !startTime || !endTime) {
+      showToast('Please fill in all fields', 'error'); return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, startTime, endTime })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showToast(`${data.created} slot(s) created!`);
+      loadSlots();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  async function deleteSlot(id) {
+    if (!confirm('Delete this slot? Any booking will also be removed.')) return;
+    try {
+      await fetch(`/api/admin/slots/${id}`, { method: 'DELETE' });
+      showToast('Slot deleted');
+      loadSlots();
+    } catch (e) {
+      showToast('Failed to delete', 'error');
+    }
+  }
+
+  loadSlots();
+  setInterval(loadSlots, 10000);
+</script>
+
+<script>
+  // ─── CSV IMPORT ───────────────────────────────────────────
+  let parsedCSVSlots = [];
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropZone').style.borderColor = 'var(--border-light)';
+    const file = e.dataTransfer.files[0];
+    if (file) processCSV(file);
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) processCSV(file);
+  }
+
+  function processCSV(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) { parseCSVSlots(e.target.result); };
+    reader.readAsText(file);
+  }
+
+  function parseCSVSlots(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) { showToast('CSV appears empty', 'error'); return; }
+
+    const delim = lines[0].includes('\t') ? '\t' : ',';
+    const headers = lines[0].split(delim).map(h => h.replace(/"/g, '').trim().toLowerCase());
+    const dateIdx = headers.findIndex(h => h.includes('interview date') || h === 'date');
+    const timeIdx = headers.findIndex(h => h.includes('time'));
+    const panelistIdx = headers.findIndex(h => h.includes('panelist 1') || h.includes('panelist'));
+
+    if (dateIdx === -1 || timeIdx === -1) { showToast('Could not find Date/Time columns', 'error'); return; }
+
+    const filterName = (document.getElementById('panelistFilter').value || '').trim().toLowerCase();
+    const seen = new Set();
+    parsedCSVSlots = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(delim).map(c => c.replace(/"/g, '').trim());
+      if (!cols[dateIdx] || !cols[timeIdx]) continue;
+
+      if (filterName && panelistIdx !== -1) {
+        const panelist = (cols[panelistIdx] || '').toLowerCase().trim();
+        if (!panelist.includes(filterName)) continue;
+      }
+
+      const dParts = cols[dateIdx].split('/');
+      if (dParts.length !== 3) continue;
+      const y = dParts[2].length === 2 ? '20' + dParts[2] : dParts[2];
+      const isoDate = `${y}-${dParts[0].padStart(2,'0')}-${dParts[1].padStart(2,'0')}`;
+
+      const tMatch = cols[timeIdx].match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+      if (!tMatch) continue;
+      let h = parseInt(tMatch[1]);
+      const min = tMatch[2].padStart(2,'0');
+      const ampm = (tMatch[3] || '').toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      const isoTime = `${h.toString().padStart(2,'0')}:${min}`;
+
+      const key = `${isoDate}T${isoTime}`;
+      if (!seen.has(key)) { seen.add(key); parsedCSVSlots.push({ date: isoDate, time: isoTime }); }
+    }
+
+    const preview = document.getElementById('csvPreview');
+    const importBtn = document.getElementById('importBtn');
+
+    if (parsedCSVSlots.length === 0) {
+      preview.style.display = 'block';
+      preview.innerHTML = '⚠️ No matching slots found. Check panelist filter or column names.';
+      importBtn.style.display = 'none';
+      return;
+    }
+
+    const byDate = {};
+    parsedCSVSlots.forEach(s => { if (!byDate[s.date]) byDate[s.date] = []; byDate[s.date].push(s.time); });
+
+    let html = `<strong>Found ${parsedCSVSlots.length} unique slots across ${Object.keys(byDate).length} dates</strong><br><br>`;
+    Object.keys(byDate).sort().slice(0, 5).forEach(d => {
+      const dd = new Date(d + 'T00:00:00');
+      html += `<div style="margin-bottom:4px"><strong>${dd.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}</strong>: ${byDate[d].map(t => { const [hh,mm] = t.split(':'); const h12 = parseInt(hh) % 12 || 12; return `${h12}:${mm} ${parseInt(hh) >= 12 ? 'PM':'AM'}`; }).join(', ')}</div>`;
+    });
+    if (Object.keys(byDate).length > 5) html += `<div style="color:var(--muted)">...and ${Object.keys(byDate).length - 5} more dates</div>`;
+
+    preview.style.display = 'block';
+    preview.innerHTML = html;
+    importBtn.style.display = 'block';
+    importBtn.textContent = `Import ${parsedCSVSlots.length} Slots`;
+  }
+
+  async function importCSVSlots() {
+    const btn = document.getElementById('importBtn');
+    btn.disabled = true;
+    btn.textContent = 'Importing…';
+    let created = 0, skipped = 0;
+
+    for (const slot of parsedCSVSlots) {
+      const [h, m] = slot.time.split(':').map(Number);
+      const endMin = m + 30;
+      const endH = endMin >= 60 ? h + 1 : h;
+      const endTime = `${endH.toString().padStart(2,'0')}:${(endMin % 60).toString().padStart(2,'0')}`;
+      try {
+        const res = await fetch('/api/admin/slots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: slot.date, startTime: slot.time, endTime })
+        });
+        const data = await res.json();
+        created += data.created || 0;
+        if (!data.created) skipped++;
+      } catch(e) { skipped++; }
+    }
+
+    showToast(`${created} slots imported, ${skipped} skipped`);
+    btn.disabled = false; btn.style.display = 'none';
+    document.getElementById('csvPreview').style.display = 'none';
+    document.getElementById('csvFile').value = '';
+    loadSlots();
+  }
+</script>
+</body>
+</html>

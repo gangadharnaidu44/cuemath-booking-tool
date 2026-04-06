@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Book Your Interview Slot — Cuemath</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --yellow: #FFBA07;
+      --yellow-dark: #e6a800;
+      --black: #0D0D0D;
+      --white: #FFFFFF;
+      --gray-bg: #F5F5F5;
+      --gray-light: #EBEBEB;
+      --gray-mid: #313131;
+      --muted: rgba(0,0,0,0.5);
+      --border: #0D0D0D;
+      --border-light: #E0E0E0;
+      --red: #ef4444;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--white);
+      color: var(--black);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 57px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .logo img {
+      height: 28px;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--black);
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span {
+      color: var(--yellow);
+    }
+
+    .header-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border-light);
+      padding: 4px 12px;
+      letter-spacing: 0.3px;
+    }
+
+    /* HERO */
+    .hero {
+      background: var(--black);
+      color: var(--white);
+      text-align: center;
+      padding: 64px 24px 56px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 39px, rgba(255,255,255,0.04) 39px, rgba(255,255,255,0.04) 40px
+      ), repeating-linear-gradient(
+        90deg, transparent, transparent 39px, rgba(255,255,255,0.04) 39px, rgba(255,255,255,0.04) 40px
+      );
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: var(--yellow);
+      color: var(--black);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 16px;
+      position: relative;
+      letter-spacing: -1px;
+    }
+
+    .hero h1 span { color: var(--yellow); }
+
+    .hero p {
+      font-size: 16px;
+      color: rgba(255,255,255,0.7);
+      max-width: 440px;
+      margin: 0 auto;
+      line-height: 1.7;
+      position: relative;
+    }
+
+    /* CONTAINER */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    .step-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 640px) {
+      .step-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 32px; }
+    }
+
+    /* CARD */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      padding: 28px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-num {
+      width: 24px; height: 24px;
+      background: var(--yellow);
+      color: var(--black);
+      font-size: 12px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* DATE TABS */
+    .date-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .date-tab {
+      padding: 8px 12px;
+      border: 1px solid var(--border-light);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--white);
+      transition: all 0.15s;
+      text-align: center;
+      min-width: 56px;
+    }
+
+    .date-tab:hover { border-color: var(--black); background: var(--gray-bg); }
+    .date-tab.active { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
+
+    .date-tab .day { font-size: 10px; opacity: 0.7; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .date-tab .num { font-size: 20px; font-weight: 800; display: block; line-height: 1.1; }
+    .date-tab .month { font-size: 10px; display: block; text-transform: uppercase; letter-spacing: 0.3px; }
+
+    /* TIME SLOTS */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .slot-btn {
+      padding: 10px 6px;
+      border: 1px solid var(--border-light);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--white);
+      transition: all 0.15s;
+      color: var(--black);
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .slot-btn:hover { border-color: var(--black); background: var(--gray-bg); }
+    .slot-btn.selected { background: var(--yellow); color: var(--black); border-color: var(--yellow); font-weight: 700; }
+
+    .no-slots {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 24px 0;
+      grid-column: span 3;
+    }
+
+    /* FORM */
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border-light);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s;
+      outline: none;
+      background: var(--white);
+      color: var(--black);
+    }
+
+    input:focus { border-color: var(--black); }
+
+    .selected-slot-preview {
+      background: #FFFBE6;
+      border: 1px solid var(--yellow);
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-book {
+      width: 100%;
+      padding: 14px;
+      background: var(--yellow);
+      color: var(--black);
+      border: 1px solid var(--yellow);
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .btn-book:hover { background: var(--black); color: var(--white); border-color: var(--black); }
+    .btn-book:disabled { background: var(--gray-light); color: var(--muted); cursor: not-allowed; border-color: var(--gray-light); }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border-light);
+      border-top-color: var(--yellow);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ERROR */
+    .error-msg {
+      background: #fef2f2;
+      color: var(--red);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+      border-left: 3px solid var(--red);
+    }
+
+    /* NO SLOTS STATE */
+    #noSlotsState {
+      text-align: center;
+      padding: 80px 24px;
+      display: none;
+    }
+
+    #noSlotsState .icon { font-size: 48px; margin-bottom: 16px; }
+    #noSlotsState h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    #noSlotsState p { color: var(--muted); font-size: 14px; }
+
+    /* CONFIRMATION */
+    .confirmation {
+      display: none;
+      max-width: 520px;
+      margin: 80px auto;
+      border: 1px solid var(--border);
+      padding: 48px 40px;
+      text-align: center;
+    }
+
+    .confirm-icon {
+      width: 64px; height: 64px;
+      background: var(--yellow);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 28px;
+    }
+
+    .confirmation h2 {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .confirmation > p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    .confirm-details {
+      background: var(--gray-bg);
+      border-left: 3px solid var(--yellow);
+      padding: 16px 20px;
+      margin: 24px 0;
+      text-align: left;
+      font-size: 14px;
+      line-height: 2;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-text">cue<span>math</span></span>
+  </div>
+  <span class="header-tag">Interview Scheduling</span>
+</header>
+
+<div class="hero">
+  <div class="hero-badge">Interview Booking</div>
+  <h1>Schedule Your<br><span>Interview Slot</span></h1>
+  <p>Choose a slot that works best for you — we've kept 30 minutes just for you.<br style="display:block;margin-bottom:6px"> Once confirmed, please honour your slot. We genuinely look forward to this conversation and want to give you our full attention.</p>
+</div>
+
+<div class="container" id="mainContent">
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    Fetching available slots…
+  </div>
+
+  <div class="step-grid" id="bookingUI" style="display:none">
+    <!-- Left: Slot Picker -->
+    <div class="card">
+      <div class="card-title">
+        <div class="step-num">1</div>
+        Choose a Date & Time
+      </div>
+      <div class="date-tabs" id="dateTabs"></div>
+      <div class="slots-grid" id="slotsGrid">
+        <div class="no-slots">Select a date to see slots</div>
+      </div>
+    </div>
+
+    <!-- Right: Details -->
+    <div class="card">
+      <div class="card-title">
+        <div class="step-num">2</div>
+        Your Details
+      </div>
+
+      <div id="slotPreview" style="display:none" class="selected-slot-preview">
+        <span>📅</span>
+        <span id="slotPreviewText"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="nameInput" placeholder="e.g. Priya Sharma" />
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="emailInput" placeholder="e.g. priya@email.com" />
+      </div>
+
+      <button class="btn-book" id="bookBtn" disabled onclick="submitBooking()">
+        Confirm Booking
+      </button>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+  </div>
+
+  <div id="noSlotsState">
+    <div class="icon">📭</div>
+    <h3>No slots available right now</h3>
+    <p>Please check back soon or contact us directly.</p>
+  </div>
+</div>
+
+<div class="confirmation" id="confirmationPage">
+  <div class="confirm-icon">✓</div>
+  <h2>You're all set!</h2>
+  <p>Your interview has been successfully booked.</p>
+  <div class="confirm-details" id="confirmDetails"></div>
+  <p style="margin-top:8px;color:var(--muted);font-size:13px">We'll see you soon. Good luck!</p>
+</div>
+
+<script>
+  let allSlots = [];
+  let selectedSlotId = null;
+  let activeDate = null;
+
+  async function loadSlots() {
+    try {
+      const res = await fetch('/api/slots');
+      allSlots = await res.json();
+
+      document.getElementById('loadingState').style.display = 'none';
+
+      if (allSlots.length === 0) {
+        document.getElementById('noSlotsState').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('bookingUI').style.display = 'grid';
+      renderDateTabs();
+    } catch (e) {
+      document.getElementById('loadingState').innerHTML = '<div style="color:#ef4444">Failed to load slots. Please refresh.</div>';
+    }
+  }
+
+  function groupByDate() {
+    const map = {};
+    allSlots.forEach(s => {
+      if (!map[s.date]) map[s.date] = [];
+      map[s.date].push(s);
+    });
+    return map;
+  }
+
+  function renderDateTabs() {
+    const grouped = groupByDate();
+    const dates = Object.keys(grouped).sort();
+    const container = document.getElementById('dateTabs');
+    container.innerHTML = '';
+
+    dates.forEach((date, i) => {
+      const d = new Date(date + 'T00:00:00');
+      const dayName = d.toLocaleDateString('en-IN', { weekday: 'short' });
+      const num = d.getDate();
+      const month = d.toLocaleDateString('en-IN', { month: 'short' });
+
+      const tab = document.createElement('div');
+      tab.className = 'date-tab' + (i === 0 ? ' active' : '');
+      tab.innerHTML = `<span class="day">${dayName}</span><span class="num">${num}</span><span class="month">${month}</span>`;
+      tab.onclick = () => selectDate(date, tab);
+      container.appendChild(tab);
+    });
+
+    if (dates.length > 0) selectDate(dates[0], container.children[0]);
+  }
+
+  function selectDate(date, tabEl) {
+    activeDate = date;
+    document.querySelectorAll('.date-tab').forEach(t => t.classList.remove('active'));
+    tabEl.classList.add('active');
+    renderSlots(date);
+  }
+
+  function renderSlots(date) {
+    const grouped = groupByDate();
+    const daySlots = (grouped[date] || []).sort((a, b) => a.time.localeCompare(b.time));
+    const grid = document.getElementById('slotsGrid');
+    grid.innerHTML = '';
+
+    if (daySlots.length === 0) {
+      grid.innerHTML = '<div class="no-slots">No slots for this date</div>';
+      return;
+    }
+
+    daySlots.forEach(slot => {
+      const btn = document.createElement('button');
+      btn.className = 'slot-btn' + (slot.id === selectedSlotId ? ' selected' : '');
+      btn.textContent = formatTime(slot.time);
+      btn.onclick = () => selectSlot(slot);
+      grid.appendChild(btn);
+    });
+  }
+
+  function formatTime(time) {
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
+  }
+
+  function selectSlot(slot) {
+    selectedSlotId = slot.id;
+    renderSlots(activeDate);
+    updateBookBtn();
+
+    const d = new Date(slot.datetime);
+    const label = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }) + ' at ' + formatTime(slot.time);
+    document.getElementById('slotPreviewText').textContent = label + ' (30 min)';
+    document.getElementById('slotPreview').style.display = 'flex';
+  }
+
+  function updateBookBtn() {
+    const name = document.getElementById('nameInput').value.trim();
+    const email = document.getElementById('emailInput').value.trim();
+    const valid = selectedSlotId && name && email && email.includes('@');
+    document.getElementById('bookBtn').disabled = !valid;
+  }
+
+  document.getElementById('nameInput').addEventListener('input', updateBookBtn);
+  document.getElementById('emailInput').addEventListener('input', updateBookBtn);
+
+  async function submitBooking() {
+    const name = document.getElementById('nameInput').value.trim();
+    const email = document.getElementById('emailInput').value.trim();
+    const btn = document.getElementById('bookBtn');
+    const errEl = document.getElementById('errorMsg');
+
+    btn.disabled = true;
+    btn.textContent = 'Booking…';
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: selectedSlotId, name, email })
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Booking failed');
+
+      document.querySelector('.container').style.display = 'none';
+      document.querySelector('.hero').style.display = 'none';
+      const conf = document.getElementById('confirmationPage');
+      conf.style.display = 'block';
+
+      const d = new Date(data.booking.datetime);
+      const dateStr = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const timeStr = formatTime(d.toTimeString().slice(0, 5));
+
+      document.getElementById('confirmDetails').innerHTML = `
+        <strong>Name:</strong> ${name}<br>
+        <strong>Email:</strong> ${email}<br>
+        <strong>Date:</strong> ${dateStr}<br>
+        <strong>Time:</strong> ${timeStr} (30 minutes)
+      `;
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Confirm Booking';
+    }
+  }
+
+  loadSlots();
+</script>
+</body>
+</html>

@@ -206,7 +206,7 @@
     /* TIME SLOTS */
     .slots-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 6px;
     }
 
@@ -517,7 +517,7 @@
     daySlots.forEach(slot => {
       const btn = document.createElement('button');
       btn.className = 'slot-btn' + (slot.id === selectedSlotId ? ' selected' : '');
-      btn.textContent = formatTime(slot.time);
+      btn.textContent = formatTimeRange(slot.time);
       btn.onclick = () => selectSlot(slot);
       grid.appendChild(btn);
     });
@@ -528,6 +528,18 @@
     const ampm = h >= 12 ? 'PM' : 'AM';
     const h12 = h % 12 || 12;
     return `${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
+  }
+
+  function formatTimeRange(time) {
+    const [h, m] = time.split(':').map(Number);
+    const endM = m + 30;
+    const endH = endM >= 60 ? h + 1 : h;
+    const endMin = endM % 60;
+    const ampm1 = h >= 12 ? 'PM' : 'AM';
+    const ampm2 = endH >= 12 ? 'PM' : 'AM';
+    const h12start = h % 12 || 12;
+    const h12end = endH % 12 || 12;
+    return `${h12start}:${m.toString().padStart(2,'0')} – ${h12end}:${endMin.toString().padStart(2,'0')} ${ampm2}`;
   }
 
   function selectSlot(slot) {

@@ -237,7 +237,10 @@
     <div class="card">
       <div class="card-title">
         <span>All Slots</span>
-        <a href="/api/admin/bookings/export" download class="btn-download">⬇ Download Excel</a>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-red" style="font-size:11px;padding:6px 12px" onclick="deleteAllSlots()">Delete All Slots</button>
+          <a href="/api/admin/bookings/export" download class="btn-download">⬇ Download Excel</a>
+        </div>
       </div>
       <div id="slotsList"><div class="spinner" style="margin-top:20px"></div></div>
     </div>
@@ -366,6 +369,17 @@
       loadSlots();
     } catch (e) {
       showToast('Failed to delete', 'error');
+    }
+  }
+
+  async function deleteAllSlots() {
+    if (!confirm('Delete ALL slots and bookings? This cannot be undone.')) return;
+    try {
+      await fetch('/api/admin/slots/all', { method: 'DELETE' });
+      showToast('All slots deleted');
+      loadSlots();
+    } catch (e) {
+      showToast('Failed to delete all slots', 'error');
     }
   }
 

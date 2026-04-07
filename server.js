@@ -121,6 +121,16 @@ app.post('/api/admin/slots', async (req, res) => {
   }
 });
 
+app.delete('/api/admin/slots/all', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM bookings');
+    await pool.query('DELETE FROM slots');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.delete('/api/admin/slots/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM slots WHERE id = $1', [req.params.id]);

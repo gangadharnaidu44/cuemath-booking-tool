@@ -51,6 +51,7 @@ app.get('/api/slots', async (req, res) => {
       SELECT s.*, COUNT(b.id)::int AS booking_count
       FROM slots s
       LEFT JOIN bookings b ON b.slot_id = s.id
+      WHERE s.datetime::timestamp > (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '12 hours'
       GROUP BY s.id
       HAVING COUNT(b.id) < $1
       ORDER BY s.datetime ASC

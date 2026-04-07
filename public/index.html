@@ -514,7 +514,14 @@
       return;
     }
 
+    // Group by time — show one button per unique time, use first available slot id
+    const byTime = {};
     daySlots.forEach(slot => {
+      if (!byTime[slot.time]) byTime[slot.time] = slot;
+    });
+
+    Object.keys(byTime).sort().forEach(time => {
+      const slot = byTime[time];
       const btn = document.createElement('button');
       btn.className = 'slot-btn' + (slot.id === selectedSlotId ? ' selected' : '');
       btn.textContent = formatTimeRange(slot.time);

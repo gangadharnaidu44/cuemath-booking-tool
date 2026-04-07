@@ -98,22 +98,17 @@ app.post('/api/admin/slots', async (req, res) => {
   }
 
   try {
-    const { rows: existing } = await pool.query('SELECT datetime FROM slots WHERE date = $1', [date]);
-    const existingDatetimes = new Set(existing.map(s => s.datetime));
     const newSlots = [];
-
     for (let t = startTotal; t + 30 <= endTotal; t += 30) {
       const h = Math.floor(t / 60).toString().padStart(2, '0');
       const m = (t % 60).toString().padStart(2, '0');
       const datetime = `${date}T${h}:${m}:00`;
-      if (!existingDatetimes.has(datetime)) {
-        const id = `${date}-${h}${m}-${Date.now()}`;
-        await pool.query(
-          'INSERT INTO slots (id, datetime, date, time) VALUES ($1, $2, $3, $4)',
-          [id, datetime, date, `${h}:${m}`]
-        );
-        newSlots.push({ id, datetime, date, time: `${h}:${m}` });
-      }
+      const id = `${date}-${h}${m}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+      await pool.query(
+        'INSERT INTO slots (id, datetime, date, time) VALUES ($1, $2, $3, $4)',
+        [id, datetime, date, `${h}:${m}`]
+      );
+      newSlots.push({ id, datetime, date, time: `${h}:${m}` });
     }
     res.json({ created: newSlots.length, slots: newSlots });
   } catch (e) {

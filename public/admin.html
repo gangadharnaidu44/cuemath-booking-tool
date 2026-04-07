@@ -312,20 +312,18 @@
         <div class="slots-by-date">
           <div class="date-header">📅 ${formatDate(date)}</div>
           ${grouped[date].map(slot => {
-            const count = slot.booking_count || 0;
-            const cap = slot.capacity || 5;
-            const full = count >= cap;
-            const statusClass = full ? 'booked' : count > 0 ? 'partial' : 'available';
+            const booked = slot.bookings && slot.bookings.length > 0;
+            const statusClass = booked ? 'booked' : 'available';
             return `
             <div class="slot-row ${statusClass}">
               <div class="slot-info">
                 <div class="slot-time">${formatTimeRange(slot.time)}</div>
-                ${slot.bookings && slot.bookings.length > 0 ? slot.bookings.map(b => `
-                  <div class="slot-candidate">👤 ${b.name} · ${b.email} <span style="color:var(--yellow-dark);font-weight:700">· Acct ${b.zoom_account_index + 1}</span></div>
+                ${booked ? slot.bookings.map(b => `
+                  <div class="slot-candidate">👤 ${b.name} · ${b.email}</div>
                 `).join('') : ''}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
-                <span class="slot-status ${statusClass}">${count}/${cap}</span>
+                <span class="slot-status ${statusClass}">${booked ? 'Booked' : 'Free'}</span>
                 <button class="btn btn-red" onclick="deleteSlot('${slot.id}')">✕</button>
               </div>
             </div>`;

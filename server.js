@@ -5,7 +5,7 @@ const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MAX_BOOKINGS_PER_SLOT = parseInt(process.env.MAX_ZOOM_ACCOUNTS || '5');
+const MAX_BOOKINGS_PER_SLOT = 1;
 
 // ─── DATABASE ───────────────────────────────────────────────
 const pool = new Pool({

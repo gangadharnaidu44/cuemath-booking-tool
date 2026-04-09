@@ -108,8 +108,9 @@
     .date-header {
       font-size: 11px; font-weight: 700; color: var(--muted);
       text-transform: uppercase; letter-spacing: 0.8px;
-      margin-bottom: 6px; padding-bottom: 4px;
+      margin-bottom: 6px; padding-bottom: 8px;
       border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
     }
     .slot-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -314,10 +315,24 @@
         grouped[s.date].push(s);
       });
 
-      container.innerHTML = Object.keys(grouped).sort().map(date => `
+      container.innerHTML = Object.keys(grouped).sort().map(date => {
+        const daySlots = grouped[date];
+        const dayBooked = daySlots.filter(s => s.bookings && s.bookings.length > 0).length;
+        const dayAvail = daySlots.length - dayBooked;
+        return `
         <div class="slots-by-date">
-          <div class="date-header">📅 ${formatDate(date)}</div>
-          ${grouped[date].map(slot => {
+          <div class="date-header">
+            <span>📅 ${formatDate(date)}</span>
+            <span style="display:flex;gap:6px;align-items:center">
+              <span style="background:var(--black);color:var(--white);font-size:10px;font-weight:700;padding:2px 8px;letter-spacing:0.4px">
+                ${dayBooked} Booked
+              </span>
+              <span style="background:var(--gray-bg);color:var(--black);font-size:10px;font-weight:700;padding:2px 8px;border:1px solid var(--border-light);letter-spacing:0.4px">
+                ${dayAvail} Free
+              </span>
+            </span>
+          </div>
+          ${daySlots.map(slot => {
             const booked = slot.bookings && slot.bookings.length > 0;
             const statusClass = booked ? 'booked' : 'available';
             return `
@@ -334,8 +349,8 @@
               </div>
             </div>`;
           }).join('')}
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     } catch (e) {
       document.getElementById('slotsList').innerHTML = '<div style="color:var(--red);font-size:13px;padding:16px">Failed to load slots</div>';
     }

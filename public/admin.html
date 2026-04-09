@@ -177,6 +177,10 @@
         <label>To</label>
         <input type="time" id="endTime" value="12:00" />
       </div>
+      <div class="form-group">
+        <label>Panelist (optional)</label>
+        <input type="text" id="panelistName" placeholder="e.g. Jeevitha" />
+      </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6">
         Slots are created every <strong style="color:var(--black)">30 minutes</strong> between these times.
       </div>
@@ -291,7 +295,7 @@
       const slots = await res.json();
 
       const total = slots.length;
-      const booked = slots.filter(s => s.booking).length;
+      const booked = slots.filter(s => s.bookings && s.bookings.length > 0).length;
       document.getElementById('statTotal').textContent = total;
       document.getElementById('statBooked').textContent = booked;
       document.getElementById('statAvail').textContent = total - booked;
@@ -318,8 +322,9 @@
             <div class="slot-row ${statusClass}">
               <div class="slot-info">
                 <div class="slot-time">${formatTimeRange(slot.time)}</div>
+                ${slot.panelist ? `<div style="font-size:12px;font-weight:600;color:var(--black);margin-top:2px">👤 ${slot.panelist}</div>` : ''}
                 ${booked ? slot.bookings.map(b => `
-                  <div class="slot-candidate">👤 ${b.name} · ${b.email}</div>
+                  <div class="slot-candidate" style="font-size:11px;color:var(--muted)">📩 ${b.name} · ${b.email}</div>
                 `).join('') : ''}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -339,6 +344,7 @@
     const date = document.getElementById('slotDate').value;
     const startTime = document.getElementById('startTime').value;
     const endTime = document.getElementById('endTime').value;
+    const panelist = document.getElementById('panelistName').value.trim();
 
     if (!date || !startTime || !endTime) {
       showToast('Please fill in all fields', 'error'); return;
@@ -348,7 +354,7 @@
       const res = await fetch('/api/admin/slots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, startTime, endTime })
+        body: JSON.stringify({ date, startTime, endTime, panelist: panelist || undefined })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -446,7 +452,8 @@
       const isoTime = `${h.toString().padStart(2,'0')}:${min}`;
 
       // Every row = one bookable slot (supports multiple panelists at same time)
-      parsedCSVSlots.push({ date: isoDate, time: isoTime });
+      const panelistName = panelistIdx !== -1 ? (cols[panelistIdx] || '').trim() : '';
+      parsedCSVSlots.push({ date: isoDate, time: isoTime, panelist: panelistName || undefined });
     }
 
     const preview = document.getElementById('csvPreview');
@@ -490,7 +497,7 @@
         const res = await fetch('/api/admin/slots', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: slot.date, startTime: slot.time, endTime })
+          body: JSON.stringify({ date: slot.date, startTime: slot.time, endTime, panelist: slot.panelist })
         });
         const data = await res.json();
         created += data.created || 0;

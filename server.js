@@ -36,6 +36,7 @@ async function initDB() {
   `);
   await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS zoom_account_index INTEGER NOT NULL DEFAULT 0`);
   await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS zoom_link TEXT`);
+  await pool.query(`ALTER TABLE slots ADD COLUMN IF NOT EXISTS panelist TEXT`);
   console.log('✅ Database ready');
 }
 
@@ -51,7 +52,7 @@ app.get('/api/slots', async (req, res) => {
       SELECT s.*, COUNT(b.id)::int AS booking_count
       FROM slots s
       LEFT JOIN bookings b ON b.slot_id = s.id
-      WHERE s.datetime::timestamp > (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '12 hours'
+      WHERE s.datetime::timestamp > (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '4 hours'
       GROUP BY s.id
       HAVING COUNT(b.id) < $1
       ORDER BY s.datetime ASC
@@ -84,7 +85,7 @@ app.get('/api/admin/slots', async (req, res) => {
 });
 
 app.post('/api/admin/slots', async (req, res) => {
-  const { date, startTime, endTime } = req.body;
+  const { date, startTime, endTime, panelist } = req.body;
   if (!date || !startTime || !endTime) {
     return res.status(400).json({ error: 'date, startTime, endTime are required' });
   }
@@ -106,10 +107,10 @@ app.post('/api/admin/slots', async (req, res) => {
       const datetime = `${date}T${h}:${m}:00`;
       const id = `${date}-${h}${m}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
       await pool.query(
-        'INSERT INTO slots (id, datetime, date, time) VALUES ($1, $2, $3, $4)',
-        [id, datetime, date, `${h}:${m}`]
+        'INSERT INTO slots (id, datetime, date, time, panelist) VALUES ($1, $2, $3, $4, $5)',
+        [id, datetime, date, `${h}:${m}`, panelist || null]
       );
-      newSlots.push({ id, datetime, date, time: `${h}:${m}` });
+      newSlots.push({ id, datetime, date, time: `${h}:${m}`, panelist: panelist || null });
     }
     res.json({ created: newSlots.length, slots: newSlots });
   } catch (e) {

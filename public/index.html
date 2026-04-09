@@ -221,10 +221,15 @@
       color: var(--black);
       text-align: center;
       font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
     }
 
     .slot-btn:hover { border-color: var(--black); background: var(--gray-bg); }
     .slot-btn.selected { background: var(--yellow); color: var(--black); border-color: var(--yellow); font-weight: 700; }
+    .slot-panelist { font-size: 10px; font-weight: 500; opacity: 0.65; }
 
     .no-slots {
       text-align: center;
@@ -514,17 +519,10 @@
       return;
     }
 
-    // Group by time — show one button per unique time, use first available slot id
-    const byTime = {};
     daySlots.forEach(slot => {
-      if (!byTime[slot.time]) byTime[slot.time] = slot;
-    });
-
-    Object.keys(byTime).sort().forEach(time => {
-      const slot = byTime[time];
       const btn = document.createElement('button');
       btn.className = 'slot-btn' + (slot.id === selectedSlotId ? ' selected' : '');
-      btn.textContent = formatTimeRange(slot.time);
+      btn.innerHTML = `<span>${formatTimeRange(slot.time)}</span>${slot.panelist ? `<span class="slot-panelist">👤 ${slot.panelist}</span>` : ''}`;
       btn.onclick = () => selectSlot(slot);
       grid.appendChild(btn);
     });

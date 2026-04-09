@@ -213,15 +213,20 @@ app.delete('/api/admin/bookings/:id', async (req, res) => {
 
 app.get('/api/admin/bookings/export', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM bookings ORDER BY datetime ASC');
+    const { rows } = await pool.query(`
+      SELECT b.*, s.panelist
+      FROM bookings b
+      LEFT JOIN slots s ON s.id = b.slot_id
+      ORDER BY b.datetime ASC
+    `);
     const csvRows = [
-      ['Name', 'Email', 'Date', 'Time', 'Booked At'],
+      ['Name', 'Email', 'Date', 'Time', 'Panelist', 'Booked At'],
       ...rows.map(b => {
         const d = new Date(b.datetime);
         const date = d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         const bookedAt = new Date(b.booked_at).toLocaleString('en-IN');
-        return [b.name, b.email, date, time, bookedAt];
+        return [b.name, b.email, date, time, b.panelist || '', bookedAt];
       })
     ];
     const csv = csvRows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');

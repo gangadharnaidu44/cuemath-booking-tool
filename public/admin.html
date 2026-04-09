@@ -170,20 +170,22 @@
         <input type="date" id="slotDate" />
       </div>
       <div class="form-group">
-        <label>From</label>
-        <input type="time" id="startTime" value="09:00" />
-      </div>
-      <div class="form-group">
-        <label>To</label>
-        <input type="time" id="endTime" value="12:00" />
-      </div>
-      <div class="form-group">
         <label>Panelist (optional)</label>
         <input type="text" id="panelistName" placeholder="e.g. Jeevitha" />
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6">
-        Slots are created every <strong style="color:var(--black)">30 minutes</strong> between these times.
+      <div id="timeBlocks">
+        <div class="time-block" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <div style="flex:1">
+            <label>From</label>
+            <input type="time" class="block-start" value="09:00" style="width:100%;padding:10px 12px;border:1px solid var(--border-light);font-size:13px;font-family:Inter,sans-serif;outline:none;background:var(--white);color:var(--black)" />
+          </div>
+          <div style="flex:1">
+            <label>To</label>
+            <input type="time" class="block-end" value="09:30" style="width:100%;padding:10px 12px;border:1px solid var(--border-light);font-size:13px;font-family:Inter,sans-serif;outline:none;background:var(--white);color:var(--black)" />
+          </div>
+        </div>
       </div>
+      <button class="btn" onclick="addTimeBlock()" style="width:100%;background:var(--gray-bg);color:var(--black);border:1px dashed var(--border-light);margin-bottom:12px;font-size:12px">+ Add Another Time Block</button>
       <button class="btn btn-yellow" onclick="addSlots()">Create Slots</button>
     </div>
 
@@ -321,10 +323,9 @@
             return `
             <div class="slot-row ${statusClass}">
               <div class="slot-info">
-                <div class="slot-time">${formatTimeRange(slot.time)}</div>
-                ${slot.panelist ? `<div style="font-size:12px;font-weight:600;color:var(--black);margin-top:2px">👤 ${slot.panelist}</div>` : ''}
+                <div class="slot-time">${formatTimeRange(slot.time)}${slot.panelist ? `<span style="font-size:12px;font-weight:600;color:var(--muted);margin-left:10px">· ${slot.panelist}</span>` : ''}</div>
                 ${booked ? slot.bookings.map(b => `
-                  <div class="slot-candidate" style="font-size:11px;color:var(--muted)">📩 ${b.name} · ${b.email}</div>
+                  <div class="slot-candidate">👤 ${b.name} · ${b.email}</div>
                 `).join('') : ''}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -340,29 +341,49 @@
     }
   }
 
+  function addTimeBlock() {
+    const block = document.createElement('div');
+    block.className = 'time-block';
+    block.style = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+    block.innerHTML = `
+      <div style="flex:1">
+        <label>From</label>
+        <input type="time" class="block-start" value="09:00" style="width:100%;padding:10px 12px;border:1px solid var(--border-light);font-size:13px;font-family:Inter,sans-serif;outline:none;background:var(--white);color:var(--black)" />
+      </div>
+      <div style="flex:1">
+        <label>To</label>
+        <input type="time" class="block-end" value="09:30" style="width:100%;padding:10px 12px;border:1px solid var(--border-light);font-size:13px;font-family:Inter,sans-serif;outline:none;background:var(--white);color:var(--black)" />
+      </div>
+      <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);padding:4px;margin-top:14px">✕</button>
+    `;
+    document.getElementById('timeBlocks').appendChild(block);
+  }
+
   async function addSlots() {
     const date = document.getElementById('slotDate').value;
-    const startTime = document.getElementById('startTime').value;
-    const endTime = document.getElementById('endTime').value;
     const panelist = document.getElementById('panelistName').value.trim();
+    if (!date) { showToast('Please select a date', 'error'); return; }
 
-    if (!date || !startTime || !endTime) {
-      showToast('Please fill in all fields', 'error'); return;
-    }
+    const blocks = document.querySelectorAll('.time-block');
+    if (blocks.length === 0) { showToast('Add at least one time block', 'error'); return; }
 
-    try {
-      const res = await fetch('/api/admin/slots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, startTime, endTime, panelist: panelist || undefined })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      showToast(`${data.created} slot(s) created!`);
-      loadSlots();
-    } catch (e) {
-      showToast(e.message, 'error');
+    let totalCreated = 0;
+    for (const block of blocks) {
+      const startTime = block.querySelector('.block-start').value;
+      const endTime = block.querySelector('.block-end').value;
+      if (!startTime || !endTime) continue;
+      try {
+        const res = await fetch('/api/admin/slots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date, startTime, endTime, panelist: panelist || undefined })
+        });
+        const data = await res.json();
+        if (res.ok) totalCreated += data.created || 0;
+      } catch (e) {}
     }
+    showToast(`${totalCreated} slot(s) created!`);
+    loadSlots();
   }
 
   async function deleteSlot(id) {
@@ -421,7 +442,11 @@
     const headers = lines[0].split(delim).map(h => h.replace(/"/g, '').trim().toLowerCase());
     const dateIdx = headers.findIndex(h => h.includes('interview date') || h === 'date');
     const timeIdx = headers.findIndex(h => h.includes('time'));
-    const panelistIdx = headers.findIndex(h => h.includes('panelist 1') || h.includes('panelist'));
+    const panelistIdx = (() => {
+      const exact = headers.findIndex(h => h === 'panelist 1');
+      if (exact !== -1) return exact;
+      return headers.findIndex(h => h.includes('panelist 1'));
+    })();
 
     if (dateIdx === -1 || timeIdx === -1) { showToast('Could not find Date/Time columns', 'error'); return; }
 
